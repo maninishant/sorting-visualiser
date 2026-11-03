@@ -1,0 +1,3 @@
+/Users/ankitverma/proejctcpp/build/CMakeFiles/ProjectCpp.dir
+/Users/ankitverma/proejctcpp/build/CMakeFiles/edit_cache.dir
+/Users/ankitverma/proejctcpp/build/CMakeFiles/rebuild_cache.dir
