@@ -11,6 +11,12 @@
 
 using namespace std;
 
+enum class Algorithm
+{
+    Merge,
+    Bubble
+};
+
 vector<int> generateRandomArray(int n)
 {
     random_device rd;
@@ -40,7 +46,9 @@ bool parseCustomInput(const string& input, vector<int>& result)
 
             while (position < token.size() &&
                    isspace(static_cast<unsigned char>(token[position])))
+            {
                 position++;
+            }
 
             if (position != token.size() || value < 1 || value > 100)
                 return false;
@@ -88,8 +96,7 @@ int main()
 {
     sf::Font font;
 
-    if (!font.openFromFile(
-        "/System/Library/Fonts/Supplemental/Arial.ttf"))
+    if (!font.openFromFile("C:/Windows/Fonts/arial.ttf"))
     {
         cout << "Font could not be loaded!" << endl;
         return 1;
@@ -118,6 +125,8 @@ int main()
 
     EventType activeType = EventType::Compare;
 
+    Algorithm selectedAlgorithm = Algorithm::Merge;
+
     float animationSpeed = 0.5f;
 
     sf::Clock animationClock;
@@ -125,6 +134,7 @@ int main()
     string inputText = "45, 12, 89, 23, 10, 67";
     string status = "Ready to Sort";
 
+    // Prepare selected sorting algorithm
     auto prepareSorting = [&]()
     {
         vector<int> workingArray = arr;
@@ -136,17 +146,25 @@ int main()
         activeA = -1;
         activeB = -1;
 
-        mergeSort(
-            workingArray,
-            0,
-            static_cast<int>(workingArray.size()) - 1,
-            events
-        );
+        if (selectedAlgorithm == Algorithm::Merge)
+        {
+            mergeSort(
+                workingArray,
+                0,
+                static_cast<int>(workingArray.size()) - 1,
+                events
+            );
+        }
+        else
+        {
+            bubbleSort(workingArray, events);
+        }
 
         isPlaying = false;
         isFinished = false;
 
         activeType = EventType::Compare;
+
         status = "Ready to Sort";
 
         animationClock.restart();
@@ -159,6 +177,7 @@ int main()
             if (event->is<sf::Event::Closed>())
                 window.close();
 
+            // Keyboard input
             if (const auto* key =
                 event->getIf<sf::Event::KeyPressed>())
             {
@@ -178,7 +197,9 @@ int main()
                     {
                         original = customArray;
                         arr = original;
+
                         prepareSorting();
+
                         status = "Custom Array Applied";
                         inputActive = false;
                     }
@@ -189,6 +210,7 @@ int main()
                 }
             }
 
+            // Text input
             if (const auto* textEvent =
                 event->getIf<sf::Event::TextEntered>())
             {
@@ -205,6 +227,7 @@ int main()
                 }
             }
 
+            // Mouse input
             if (const auto* mouse =
                 event->getIf<sf::Event::MouseButtonPressed>())
             {
@@ -217,6 +240,7 @@ int main()
                         mx >= 50 && mx <= 780 &&
                         my >= 165 && my <= 210;
 
+                    // Start / Pause
                     if (mx >= 50 && mx <= 180 &&
                         my >= 100 && my <= 145)
                     {
@@ -232,6 +256,7 @@ int main()
                         animationClock.restart();
                     }
 
+                    // Reset
                     else if (mx >= 195 && mx <= 325 &&
                              my >= 100 && my <= 145)
                     {
@@ -240,6 +265,7 @@ int main()
                         status = "Array Reset";
                     }
 
+                    // Increase delay
                     else if (mx >= 340 && mx <= 470 &&
                              my >= 100 && my <= 145)
                     {
@@ -249,6 +275,7 @@ int main()
                             animationSpeed = 1.5f;
                     }
 
+                    // Decrease delay
                     else if (mx >= 485 && mx <= 615 &&
                              my >= 100 && my <= 145)
                     {
@@ -258,6 +285,7 @@ int main()
                             animationSpeed = 0.05f;
                     }
 
+                    // Random array
                     else if (mx >= 630 && mx <= 780 &&
                              my >= 100 && my <= 145)
                     {
@@ -268,6 +296,31 @@ int main()
                         status = "Random Array Generated";
                     }
 
+                    // Select Merge Sort
+                    else if (mx >= 800 && mx <= 930 &&
+                             my >= 100 && my <= 145)
+                    {
+                        selectedAlgorithm = Algorithm::Merge;
+
+                        arr = original;
+                        prepareSorting();
+
+                        status = "Merge Sort Selected";
+                    }
+
+                    // Select Bubble Sort
+                    else if (mx >= 940 && mx <= 1070 &&
+                             my >= 100 && my <= 145)
+                    {
+                        selectedAlgorithm = Algorithm::Bubble;
+
+                        arr = original;
+                        prepareSorting();
+
+                        status = "Bubble Sort Selected";
+                    }
+
+                    // Apply custom input
                     else if (mx >= 900 && mx <= 1030 &&
                              my >= 165 && my <= 210)
                     {
@@ -279,6 +332,7 @@ int main()
                             arr = original;
 
                             prepareSorting();
+
                             status = "Custom Array Applied";
                             inputActive = false;
                         }
@@ -303,11 +357,23 @@ int main()
                 activeB = current.indexB;
                 activeType = current.type;
 
+                // Apply Merge Sort overwrite
                 if (current.type == EventType::Overwrite)
+                {
                     arr[current.indexA] = current.value;
+                }
 
+                // Apply Bubble Sort swap
+                if (current.type == EventType::Swap)
+                {
+                    swap(arr[current.indexA], arr[current.indexB]);
+                }
+
+                // Mark sorted positions
                 if (current.type == EventType::Sorted)
+                {
                     sorted[current.indexA] = true;
+                }
 
                 eventIndex++;
                 animationClock.restart();
@@ -328,35 +394,69 @@ int main()
         heading.setPosition({50.f, 20.f});
         window.draw(heading);
 
-        sf::Text subtitle(font, "MERGE SORT VISUALIZER", 14);
+        string algorithmName =
+            selectedAlgorithm == Algorithm::Merge
+            ? "MERGE SORT VISUALIZER"
+            : "BUBBLE SORT VISUALIZER";
+
+        sf::Text subtitle(font, algorithmName, 14);
         subtitle.setFillColor(sf::Color(100, 116, 139));
         subtitle.setPosition({55.f, 60.f});
         window.draw(subtitle);
 
-        // Buttons
-        drawButton(window, font, isPlaying ? "Pause" : "Start",
-                   50, 100, 130, sf::Color(37, 99, 235));
+        // Main controls
+        drawButton(
+            window, font, isPlaying ? "Pause" : "Start",
+            50, 100, 130, sf::Color(37, 99, 235)
+        );
 
-        drawButton(window, font, "Reset",
-                   195, 100, 130, sf::Color(71, 85, 105));
+        drawButton(
+            window, font, "Reset",
+            195, 100, 130, sf::Color(71, 85, 105)
+        );
 
-        drawButton(window, font, "Speed -",
-                   340, 100, 130, sf::Color(71, 85, 105));
+        drawButton(
+            window, font, "Speed -",
+            340, 100, 130, sf::Color(71, 85, 105)
+        );
 
-        drawButton(window, font, "Speed +",
-                   485, 100, 130, sf::Color(71, 85, 105));
+        drawButton(
+            window, font, "Speed +",
+            485, 100, 130, sf::Color(71, 85, 105)
+        );
 
-        drawButton(window, font, "Random",
-                   630, 100, 150, sf::Color(16, 145, 129));
+        drawButton(
+            window, font, "Random",
+            630, 100, 150, sf::Color(16, 145, 129)
+        );
+
+        // Algorithm selection buttons
+        drawButton(
+            window, font, "Merge",
+            800, 100, 130,
+            selectedAlgorithm == Algorithm::Merge
+                ? sf::Color(37, 99, 235)
+                : sf::Color(71, 85, 105)
+        );
+
+        drawButton(
+            window, font, "Bubble",
+            940, 100, 130,
+            selectedAlgorithm == Algorithm::Bubble
+                ? sf::Color(37, 99, 235)
+                : sf::Color(71, 85, 105)
+        );
 
         // Input box
         sf::RectangleShape inputBox({730.f, 45.f});
         inputBox.setPosition({50.f, 165.f});
         inputBox.setFillColor(sf::Color::White);
+
         inputBox.setOutlineColor(
             inputActive ? sf::Color(37, 99, 235)
                         : sf::Color(203, 213, 225)
         );
+
         inputBox.setOutlineThickness(2.f);
         window.draw(inputBox);
 
@@ -370,8 +470,10 @@ int main()
         inputLabel.setPosition({65.f, 177.f});
         window.draw(inputLabel);
 
-        drawButton(window, font, "Apply Input",
-                   900, 165, 130, sf::Color(37, 99, 235));
+        drawButton(
+            window, font, "Apply Input",
+            900, 165, 130, sf::Color(37, 99, 235)
+        );
 
         // Status
         sf::Text statusText(font, status, 17);
@@ -389,7 +491,7 @@ int main()
         speedText.setPosition({850.f, 230.f});
         window.draw(speedText);
 
-        // COMPACT GRAPH
+        // Sorting visualization
         int n = static_cast<int>(arr.size());
 
         float availableWidth = 900.f;
@@ -419,15 +521,20 @@ int main()
             sf::Color barColor(59, 130, 246);
 
             if (sorted[i])
+            {
                 barColor = sf::Color(34, 197, 94);
-
-            else if (activeType == EventType::Compare &&
+            }
+            else if ((activeType == EventType::Compare ||
+                      activeType == EventType::Swap) &&
                      (i == activeA || i == activeB))
+            {
                 barColor = sf::Color(245, 158, 11);
-
+            }
             else if (activeType == EventType::Overwrite &&
                      i == activeA)
+            {
                 barColor = sf::Color(239, 68, 68);
+            }
 
             bar.setFillColor(barColor);
             window.draw(bar);
@@ -455,7 +562,7 @@ int main()
         // Legend
         sf::Text legend(
             font,
-            "Blue: Normal   Yellow: Compare   Red: Overwrite   Green: Sorted",
+            "Blue: Normal   Yellow: Compare/Swap   Red: Overwrite   Green: Sorted",
             15
         );
 
